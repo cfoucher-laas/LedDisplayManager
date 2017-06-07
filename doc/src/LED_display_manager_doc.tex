@@ -1,0 +1,198 @@
+\documentclass[openany,a4paper]{book}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage[]{color}
+\usepackage{a4wide}
+\usepackage{menukeys}
+\usepackage[pdftex]{hyperref}
+
+\definecolor{darkblue}{rgb}{0,0,0.5}
+\definecolor{darkgreen}{rgb}{0,0.5,0}
+
+% Url command stle (used in document for paths)
+\renewcommand\UrlFont{\color{blue}\ttfamily}
+
+% Line skip at § start
+%\setlength{\parskip}{1ex plus .4ex minus .4ex}
+
+% Configure document metainformations
+\hypersetup
+{
+%	bookmarks=true,
+	unicode=true,
+	colorlinks=true,
+	linkcolor=blue,
+	citecolor=darkblue,
+	urlcolor=darkgreen,
+	pdftitle={LED display manager documentation},
+	pdfauthor={Clément Foucher}
+}
+
+% Document header information
+\title{LED display manager documentation}
+\author
+{
+        Clément Foucher (\href{https://homepages.laas.fr/cfoucher}{homepage})\\
+	\href{mailto:Clement.Foucher@laas.fr}{Clement.Foucher@laas.fr}\\
+	\\
+	LAAS--CNRS\\
+	\href{https://www.laas.fr/public/en}{Laboratoire d'analyse et d'architecture des syst\`emes}\\
+	\\
+	\\
+	\\
+        \\
+        \\
+	\\
+	\\
+	\\
+	Version 1.0\\
+	\\
+	\\
+	This work is licensed under the Creative Commons\\
+	Attribution-ShareAlike 4.0 International License.\\
+	\\
+	To view a copy of this license,\\
+	visit \href{http://creativecommons.org/licenses/by-sa/4.0/}{http://creativecommons.org/licenses/by-sa/4.0/}.
+	\\
+	\\
+	\\
+}
+
+% TODO: reorganize document: group manual installations, scripted installations.
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+
+\chapter*{Document revisions}
+
+\begin{center}
+
+\begin{tabular}{ r | c || l }
+   Revision number & Date       & Changes \\ \hline \hline
+   1.0             & 2017/06/07 & Initial release. \\ \hline
+
+\end{tabular}
+
+
+\end{center}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{General information}
+
+\section{Target hardware}
+
+The LED display manager IP is intended to command a DE-DP13212 LED display.
+As the DE-DP13212 is based on a HT1632C chip, this IP could possibly be adapted to other hardware based on the same chip.
+
+The IP uses a AXI bus, so it should run on any Xilinx device with ability to command it from a software code running on an embedded processor.
+The IP can also be used without any software by using hardware direct connection or AXI interface.
+
+Detail on how to use registers is provided in VHDL source code.
+
+The hardware and software code provided have been tested using a ZedBoard.
+
+\section{License}
+
+LDM is distributed under the termes of the GNU GPL V2 license agreement. 
+License agreement is available at http://www.gnu.org/licenses.
+
+\section{Download VHDL code}
+
+The source code of this IP can be downloaded using the following git command:
+\begin{verbatim}
+git clone git://git.renater.fr/leddisplaymana.git ldm 
+\end{verbatim}
+
+
+\chapter{Example of use on ZedBoard}
+
+This chapter presents an example of use on ZedBoard. Vivado 2017.1 was used to generate the hardware and compile the software code.
+
+
+\section{Create a Vivado IP}
+
+In Vivado, create a new project targeting ZedBoard.
+
+Click on \menu{Settings}, select \textit{VHDL} as target language and type \textit{led\_manager\_lib} as the default library.
+
+Select \menu{Add sources > Add or create design sources}.
+Click on \menu{Add Directories}, and add the \texttt{vhdl/} folder.
+
+Select \menu{Tools > Create and Package New IP...}.
+Select \menu{Package your current project} and choose a location to save the IP.
+Answer \menu{Yes} when asked if you want to copy files.
+Finally, select \menu{Review and Package} and click \menu{Package IP}.
+You can close the project.
+
+\section{Create a Vivado design}
+
+In Vivado, create a new project targeting ZedBoard.
+
+Select \menu{IP Catalog}, right-click on the IP list and select \menu{Add Repository...}, then choose the previously created folder containing the packaged IP.
+
+Select \menu{Create Block Design}, then \menu{Add IP}, and select \textit{ZYNQ7 Processing System}.
+Hit \menu{Run Block Automation > OK}.
+Click \menu{Add IP} again, and select \textit{led\_manager\_axi\_wrapper\_v1\_0}.
+Hit \menu{Run Connection Automation > OK}.
+
+In the left panel, select the three pins \textit{data}, \textit{cs} and \textit{wr}, and press \textit{ctrl + t} to make pins external.
+You can save and close the block design.
+
+Right-click on the design on the source view and click \menu{Create HDL Wrapper... > Let Vivado manage wrapper and auto-update > OK}.
+
+Select \menu{Add sources > Add or create constaints}, and choose the file \texttt{constraints/led\_manager\_zedboard.xdc}.
+
+Your project is now ready to be generated.
+
+First generate the output products: right-click on the design on the source view (it should now be listed as a child of the wrapper file), and select \menu{Generate Output Products...}.
+
+VERY IMPORTANT: Make sure the \textit{Global} synthesis option is selected, as the design contains high impedence generation wich would be discarded if selecting other option.
+
+Then, click on \menu{Generate Bitstream} and wait for process completion.
+
+When done, select \menu{File > Export > Export Hardware}, check \menu{Include Bitstream} and hit \menu{OK}.
+
+\section{Compile embedded software}
+
+Still in Vivado project, select \menu{File > Launch SDK > OK}.
+
+In SDK, select \menu{File > New > Application Project}, enter a project name and make sure OS is \textit{standalone} and language is C.
+Click \menu{Next}, choose a \textit{Hello World} application and hit \menu{Finish}.
+
+Right-click on the newly created project, \menu{Build Configurations > Set Active > Release}.
+Delete file \texttt{src/Helloworld.c} and folder \texttt{Debug}.
+
+Finally, right-click on \texttt{src} folder and click \menu{Import}.
+Select \menu{General > File System}, and choose file \texttt{sample\_sw/led\_manager\_example.c}.
+
+\section{Connect display to board and run}
+
+Connect the LED display to the ZedBoard using the following connection:
+\begin{itemize}
+ \item cs => JA1,
+ \item wr => JA2,
+ \item data => JA3.
+\end{itemize}
+
+Do not forget to connect VCC and GND pins too.
+
+Connect the ZedBoard to the computer, turn it on and select \menu{Xilinx Tools > Program FPGA}.
+Right-click on the project, \menu{Run As > Run on Hardware}.
+
+That's all, folks!
+
+
+\end{document}
+
+
